@@ -59,11 +59,12 @@ local UI = Class("UI")
 
 local Library = Class("Library")
 
-function Slider.new(Section, Text, Min, Max, Default, Callback)
+function Slider.new(Section, Text, Min, Max, Increment, Default, Callback)
     local slider = setmetatable({}, Slider)
 
     Min = Min or 0
     Max = Max or 100
+    Increment = Increment or 1
     Default = Default or 50
     Section = Section or nil
     Text = Text or "Toggle"
@@ -74,6 +75,7 @@ function Slider.new(Section, Text, Min, Max, Default, Callback)
     slider.Callback = Callback
     slider.Min = Min
     slider.Max = Max
+    slider.Increment = Increment
     slider.Default = Default
     slider.Value = 0
     slider.Id = GenId()
@@ -107,12 +109,13 @@ function Slider:_setupDragging()
 
             while RunService.RenderStepped:Wait() and self.Dragging do
                 local Percentage = math.clamp((Mouse.X - self.Instances._Slider.AbsolutePosition.X) / (self.Instances._Slider.AbsoluteSize.X), 0, 1)
-                local Value = math.floor(((self.Max - self.Min) * Percentage) + self.Min)
-
+                local Value = (self.Min + ((self.Max - self.Min) * Percentage))
+                local a, b = math.modf(Value / self.Increment)
+                Value = math.clamp(self.Increment * (a + (b > 0.5 and 1 or 0)), self.Min, self.Max)
                 self.Value = Value
                 
                 Tween(self.Instances._Value, { TextTransparency = .5 }, function()
-                    self.Instances._Value.Text = self.Value
+                    self.Instances._Value.Text = string.format("%.14g", self.Value)
                     Tween(self.Instances._Value, { TextTransparency = 0 })
                 end)
                 
@@ -1085,8 +1088,8 @@ function Section.new(Tab, Name)
     return section
 end
 
-function Section:AddSlider(Text, Min, Max, Default, Callback)
-    local NewSlider = Slider.new(self, Text, Min, Max, Default, Callback)
+function Section:AddSlider(Text, Min, Max, Increment, Default, Callback)
+    local NewSlider = Slider.new(self, Text, Min, Max, Increment, Default, Callback)
     self.Components[NewSlider.Id] = NewSlider
     self:_updateSize()
     return NewSlider
